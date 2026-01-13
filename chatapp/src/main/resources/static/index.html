@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat App</title>
+</head>
+<body>
+
+<h2>Simple Chat App</h2>
+
+<input id="sender" placeholder="Your name" />
+<br><br>
+
+<input id="message" placeholder="Type message" />
+<button onclick="sendMessage()">Send</button>
+
+<ul id="chat"></ul>
+
+<script src="/sockjs.min.js"></script>
+<script src="/stomp.min.js"></script>
+
+
+<script>
+    let stompClient = null;
+    let connected = false;
+
+    function connect() {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function () {
+            connected = true;
+            console.log("✅ WebSocket Connected");
+
+            stompClient.subscribe('/topic/messages', function (msg) {
+                const m = JSON.parse(msg.body);
+                const li = document.createElement("li");
+                li.innerText = m.sender + ": " + m.content;
+                document.getElementById("chat").appendChild(li);
+            });
+        });
+    }
+
+    function sendMessage() {
+        if (!connected) {
+            alert("WebSocket not connected yet");
+            return;
+        }
+
+        stompClient.send("/app/chat", {}, JSON.stringify({
+            sender: document.getElementById("sender").value,
+            content: document.getElementById("message").value
+        }));
+    }
+
+    window.onload = connect;
+</script>
+
+
+
+</body>
+</html>
